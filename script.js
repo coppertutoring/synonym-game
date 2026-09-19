@@ -482,6 +482,11 @@ function renderBoard() {
     board.appendChild(currentNode);
   }
 
+  // The ribbon line must span the full scrollable chain, not just the
+  // visible viewport, otherwise it scrolls out of view and never returns
+  // once the chain grows past the board's original width.
+  board.style.setProperty('--ribbon-width', `${Math.max(0, board.scrollWidth - 44)}px`);
+
   requestAnimationFrame(() => {
     const maxScroll = Math.max(0, board.scrollWidth - board.clientWidth + 12);
     board.scrollTo({ left: maxScroll, behavior: 'smooth' });
