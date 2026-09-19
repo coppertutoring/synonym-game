@@ -663,6 +663,7 @@ async function prepareGame(newStarter, mode = selectedMode) {
   hints = STARTING_HINTS;
   gameOver = false;
   inFlight = false;
+  setBusy(false);
   leaderboardSaved = false;
   board.classList.remove('chain-broken');
   continuePrompt.classList.add('hidden');
@@ -688,19 +689,28 @@ async function prepareGame(newStarter, mode = selectedMode) {
   updateStatus(`${modeLabel}: find a synonym for ${currentWord.toUpperCase()} before time runs out.`, 'success');
 }
 
+function setBusy(isBusy) {
+  hintBtn.disabled = isBusy;
+  enterBtn.disabled = isBusy;
+}
+
 async function useHint() {
   if (gameOver || inFlight || hints <= 0) {
-    updateStatus(hints <= 0 ? 'No hints remaining.' : 'Hint unavailable right now.', 'error');
+    if (hints <= 0) {
+      updateStatus('No hints remaining.', 'error');
+    }
     return;
   }
 
   inFlight = true;
+  setBusy(true);
   const options = await fetchSynonyms(currentWord);
   const valid = options.filter((entry) => !chain.includes(entry) && entry !== currentWord);
   const hintWord = valid[Math.floor(Math.random() * valid.length)] || options[0];
 
   if (!hintWord) {
     inFlight = false;
+    setBusy(false);
     updateStatus('No synonym hint is available for this word right now.', 'error');
     return;
   }
@@ -708,6 +718,7 @@ async function useHint() {
   const definition = await fetchWordDefinition(hintWord);
   hints -= 1;
   inFlight = false;
+  setBusy(false);
   updateHud();
 
   updateStatus(
@@ -745,6 +756,7 @@ async function submitGuess(event) {
   }
 
   inFlight = true;
+  setBusy(true);
   const allowedSynonyms = await fetchSynonyms(currentWord);
 
   if (!allowedSynonyms.includes(guess)) {
@@ -762,10 +774,12 @@ async function submitGuess(event) {
         endGame();
       }
       inFlight = false;
+      setBusy(false);
       return;
     }
 
     inFlight = false;
+    setBusy(false);
     return;
   }
 
@@ -790,6 +804,7 @@ async function submitGuess(event) {
   renderBoard();
   updateStatus('Nice. Now find a synonym for ' + currentWord.toUpperCase() + '.', 'success');
   inFlight = false;
+  setBusy(false);
 }
 
 starterForm.addEventListener('submit', (event) => {
@@ -908,9 +923,7 @@ playAgainBtn.addEventListener('click', () => {
 // so isNativeApp is false and the watch-ad/buy-lives buttons stay hidden.
 // ---------------------------------------------------------------------------
 
-// Google's public TEST rewarded ad unit - safe to ship, always serves test
-// ads. Replace with your own AdMob rewarded ad unit ID before publishing.
-const REWARDED_AD_UNIT_ID = 'ca-app-pub-3940256099942544/5224354917';
+const REWARDED_AD_UNIT_ID = 'ca-app-pub-4597635430474199/5614105479';
 
 // Placeholder SKU. Create a matching consumable in-app product with this
 // exact ID in Play Console before this can complete a real purchase.

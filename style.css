@@ -608,6 +608,12 @@ input:focus {
   transform: scale(0.94);
 }
 
+.hint-btn:disabled,
+.enter-btn:disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
 .status-message {
   margin-top: 4px;
   min-height: 16px;
