@@ -1,4 +1,4 @@
-const CACHE_NAME = 'synonym-chain-v1';
+const CACHE_NAME = 'synonym-chain-v2';
 const CORE_ASSETS = [
   './',
   './index.html',
@@ -34,17 +34,16 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Network-first: always try to serve the latest deployed version when
+  // online (this app ships frequent updates), falling back to the cached
+  // copy only when the network is actually unavailable.
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) {
-        return cached;
-      }
-
-      return fetch(event.request).then((response) => {
+    fetch(event.request)
+      .then((response) => {
         const responseClone = response.clone();
         caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone));
         return response;
-      });
-    })
+      })
+      .catch(() => caches.match(event.request))
   );
 });
