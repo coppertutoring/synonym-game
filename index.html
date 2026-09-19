@@ -138,11 +138,13 @@
 
           <div id="continuePrompt" class="modal-overlay hidden">
             <div class="modal-card">
-              <div class="badge">Time's up</div>
-              <h2>Use a life to keep going?</h2>
-              <p>Spend one life to add 5 seconds and keep your chain alive.</p>
+              <div class="badge">Keep going?</div>
+              <h2 id="continueHeading">Use a life to keep going?</h2>
+              <p id="continueMessage">Spend one life to add 5 seconds and keep your chain alive.</p>
               <div class="modal-actions">
                 <button id="continueYesBtn" class="primary-btn" type="button">Use a life (+5s)</button>
+                <button id="watchAdBtn" class="ghost-btn alt hidden" type="button">📺 Watch an ad (+1 life)</button>
+                <button id="buyLivesBtn" class="ghost-btn alt hidden" type="button">💎 Buy 3 lives</button>
                 <button id="continueNoBtn" class="ghost-btn alt" type="button">End run</button>
               </div>
             </div>

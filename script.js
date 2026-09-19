@@ -30,7 +30,11 @@ const enterBtn = document.getElementById('enterBtn');
 const categoriesToggleBtn = document.getElementById('categoriesToggleBtn');
 const categoryPicker = document.getElementById('categoryPicker');
 const continuePrompt = document.getElementById('continuePrompt');
+const continueHeading = document.getElementById('continueHeading');
+const continueMessage = document.getElementById('continueMessage');
 const continueYesBtn = document.getElementById('continueYesBtn');
+const watchAdBtn = document.getElementById('watchAdBtn');
+const buyLivesBtn = document.getElementById('buyLivesBtn');
 const continueNoBtn = document.getElementById('continueNoBtn');
 
 const STARTING_LIVES = 3;
@@ -537,15 +541,44 @@ function runTimerInterval() {
 
     if (timerRemaining <= 0) {
       stopTimer();
-      if (lives > 0) {
-        guessInput.blur();
-        continuePrompt.classList.remove('hidden');
+      if (canOfferContinue()) {
+        showContinuePrompt('time');
       } else {
         updateStatus('Time is up. Your run ends here.', 'error');
         endGame();
       }
     }
   }, 1000);
+}
+
+function canOfferContinue() {
+  return lives > 0 || (isNativeApp && (rewardedAdReady || billingReady));
+}
+
+function showContinuePrompt(reason) {
+  stopTimer();
+  guessInput.blur();
+
+  continueYesBtn.classList.toggle('hidden', lives <= 0);
+  if (reason === 'lives') {
+    continueHeading.textContent = 'Out of lives!';
+    continueMessage.textContent = 'Get another life to keep your chain going.';
+  } else {
+    continueHeading.textContent = "Time's up!";
+    continueMessage.textContent = 'Add 5 seconds to keep your chain going.';
+  }
+
+  updateMonetizationUI();
+  continuePrompt.classList.remove('hidden');
+}
+
+function resumeRun(rewardMessages) {
+  continuePrompt.classList.add('hidden');
+  triggerRewardPopup(rewardMessages);
+  updateHud();
+  updateStatus('Back in it! Find a synonym for ' + currentWord.toUpperCase() + '.', 'success');
+  guessInput.focus();
+  runTimerInterval();
 }
 
 function startTimer() {
@@ -722,8 +755,12 @@ async function submitGuess(event) {
     updateHud();
 
     if (lives <= 0) {
-      updateStatus('No lives remaining. The chain is broken.', 'error');
-      endGame();
+      if (canOfferContinue()) {
+        showContinuePrompt('lives');
+      } else {
+        updateStatus('No lives remaining. The chain is broken.', 'error');
+        endGame();
+      }
       inFlight = false;
       return;
     }
@@ -818,22 +855,29 @@ guessForm.addEventListener('submit', submitGuess);
 hintBtn.addEventListener('click', useHint);
 
 continueYesBtn.addEventListener('click', () => {
-  continuePrompt.classList.add('hidden');
+  if (lives <= 0) {
+    return;
+  }
   lives -= 1;
   timerRemaining += 5;
   vibrate(15);
-  triggerRewardPopup([{ type: 'life', label: '-1 ♥ used' }, { type: 'time', label: '+5s' }]);
-  updateHud();
-  updateStatus('Back in it! Find a synonym for ' + currentWord.toUpperCase() + '.', 'success');
-  guessInput.focus();
-  runTimerInterval();
+  resumeRun([{ type: 'life', label: '-1 ♥ used' }, { type: 'time', label: '+5s' }]);
+});
+
+watchAdBtn.addEventListener('click', () => {
+  showRewardedAd();
+});
+
+buyLivesBtn.addEventListener('click', () => {
+  purchaseLivesPack();
 });
 
 continueNoBtn.addEventListener('click', () => {
   continuePrompt.classList.add('hidden');
-  updateStatus('Time is up. Your run ends here.', 'error');
+  updateStatus('Your run ends here.', 'error');
   endGame();
 });
+
 restartBtn.addEventListener('click', () => {
   gameOver = true;
   stopTimer();
@@ -856,6 +900,130 @@ playAgainBtn.addEventListener('click', () => {
   renderLeaderboard();
   updateStatus('Choose a mode to begin again.', 'neutral');
 });
+
+// ---------------------------------------------------------------------------
+// Native monetization: AdMob rewarded ads + Google Play Billing.
+// These SDKs only exist inside the wrapped Android app (via Capacitor); on
+// the plain website window.Capacitor/window.CdvPurchase are simply absent,
+// so isNativeApp is false and the watch-ad/buy-lives buttons stay hidden.
+// ---------------------------------------------------------------------------
+
+// Google's public TEST rewarded ad unit - safe to ship, always serves test
+// ads. Replace with your own AdMob rewarded ad unit ID before publishing.
+const REWARDED_AD_UNIT_ID = 'ca-app-pub-3940256099942544/5224354917';
+
+// Placeholder SKU. Create a matching consumable in-app product with this
+// exact ID in Play Console before this can complete a real purchase.
+const LIVES_PACK_PRODUCT_ID = 'lives_pack_3';
+
+const isNativeApp = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+let rewardedAdReady = false;
+let billingReady = false;
+
+function updateMonetizationUI() {
+  watchAdBtn.classList.toggle('hidden', !(isNativeApp && rewardedAdReady));
+  buyLivesBtn.classList.toggle('hidden', !(isNativeApp && billingReady));
+}
+
+async function prepareRewardedAd() {
+  if (!isNativeApp) {
+    return;
+  }
+
+  try {
+    await window.Capacitor.Plugins.AdMob.prepareRewardVideoAd({ adId: REWARDED_AD_UNIT_ID });
+    rewardedAdReady = true;
+  } catch (error) {
+    rewardedAdReady = false;
+    console.warn('Rewarded ad failed to preload.', error);
+  }
+  updateMonetizationUI();
+}
+
+async function showRewardedAd() {
+  if (!isNativeApp || !rewardedAdReady) {
+    return;
+  }
+
+  try {
+    await window.Capacitor.Plugins.AdMob.showRewardVideoAd();
+  } catch (error) {
+    console.warn('Rewarded ad failed to show.', error);
+    updateStatus('Ad is not ready yet. Try again in a moment.', 'error');
+  }
+}
+
+async function purchaseLivesPack() {
+  if (!isNativeApp || !billingReady || !window.CdvPurchase) {
+    return;
+  }
+
+  const product = window.CdvPurchase.store.get(LIVES_PACK_PRODUCT_ID);
+  const offer = product && product.getOffer ? product.getOffer() : null;
+  if (!offer) {
+    updateStatus('Store is not ready yet. Try again in a moment.', 'error');
+    return;
+  }
+
+  try {
+    await window.CdvPurchase.store.order(offer);
+  } catch (error) {
+    console.warn('Purchase failed.', error);
+    updateStatus('Purchase could not be completed.', 'error');
+  }
+}
+
+async function initMonetization() {
+  if (!isNativeApp) {
+    return;
+  }
+
+  try {
+    const { AdMob } = window.Capacitor.Plugins;
+    await AdMob.initialize();
+    AdMob.addListener('onRewardedVideoAdReward', () => {
+      lives += 1;
+      timerRemaining += 5;
+      vibrate(15);
+      resumeRun([{ type: 'life', label: '+1 ♥ from ad' }, { type: 'time', label: '+5s' }]);
+    });
+    AdMob.addListener('onRewardedVideoAdFailedToLoad', () => {
+      rewardedAdReady = false;
+      updateMonetizationUI();
+    });
+    AdMob.addListener('onRewardedVideoAdClosed', () => {
+      prepareRewardedAd();
+    });
+    await prepareRewardedAd();
+  } catch (error) {
+    console.warn('AdMob unavailable.', error);
+  }
+
+  try {
+    const { store, ProductType, Platform } = window.CdvPurchase;
+    store.register({
+      id: LIVES_PACK_PRODUCT_ID,
+      type: ProductType.CONSUMABLE,
+      platform: Platform.GOOGLE_PLAY
+    });
+    store.when(LIVES_PACK_PRODUCT_ID).approved((transaction) => {
+      lives += 3;
+      timerRemaining += 5;
+      vibrate(15);
+      transaction.finish();
+      resumeRun([{ type: 'life', label: '+3 ♥ purchased' }, { type: 'time', label: '+5s' }]);
+    });
+    store.error((error) => console.warn('Store error.', error));
+    await store.initialize([Platform.GOOGLE_PLAY]);
+    billingReady = true;
+  } catch (error) {
+    console.warn('Play Billing unavailable.', error);
+  }
+
+  updateMonetizationUI();
+}
+
+initMonetization();
 
 const savedPlayerName = localStorage.getItem(PLAYER_NAME_KEY);
 if (savedPlayerName) {
