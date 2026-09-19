@@ -473,27 +473,56 @@ input:focus {
   min-height: 24px;
 }
 
-.resource-row {
+#gameScreen {
+  position: relative;
+}
+
+.modal-overlay {
+  position: absolute;
+  inset: 0;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(42, 47, 61, 0.45);
+  backdrop-filter: blur(3px);
+  z-index: 20;
+  border-radius: inherit;
 }
 
-.mini-action-btn {
-  flex-shrink: 0;
-  border: 1px solid rgba(248, 113, 113, 0.4);
-  border-radius: 999px;
-  background: rgba(248, 113, 113, 0.12);
-  color: var(--danger);
-  font-weight: 800;
-  font-size: 0.7rem;
-  padding: 4px 9px;
-  touch-action: manipulation;
+.modal-card {
+  width: 100%;
+  max-width: 320px;
+  background: #fff;
+  border-radius: 22px;
+  padding: 22px;
+  text-align: center;
+  box-shadow: 0 24px 48px rgba(42, 47, 61, 0.28);
 }
 
-.mini-action-btn:active {
-  transform: scale(0.94);
+.modal-card h2 {
+  margin: 12px 0 8px;
+  font-size: 1.3rem;
+  letter-spacing: -0.02em;
+}
+
+.modal-card p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+  font-size: 0.92rem;
+}
+
+.modal-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.modal-actions .primary-btn,
+.modal-actions .ghost-btn {
+  width: 100%;
 }
 
 .token {

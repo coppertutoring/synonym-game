@@ -29,7 +29,9 @@ const bonusPop = document.getElementById('bonusPop');
 const enterBtn = document.getElementById('enterBtn');
 const categoriesToggleBtn = document.getElementById('categoriesToggleBtn');
 const categoryPicker = document.getElementById('categoryPicker');
-const useLifeBtn = document.getElementById('useLifeBtn');
+const continuePrompt = document.getElementById('continuePrompt');
+const continueYesBtn = document.getElementById('continueYesBtn');
+const continueNoBtn = document.getElementById('continueNoBtn');
 
 const STARTING_LIVES = 3;
 const STARTING_HINTS = 2;
@@ -521,11 +523,8 @@ function stopTimer() {
   }
 }
 
-function startTimer() {
+function runTimerInterval() {
   stopTimer();
-
-  timerRemaining = ROUND_TIME_LIMIT;
-  updateHud();
 
   timerInterval = setInterval(() => {
     if (gameOver) {
@@ -538,10 +537,21 @@ function startTimer() {
 
     if (timerRemaining <= 0) {
       stopTimer();
-      updateStatus('Time is up. Your run ends here.', 'error');
-      endGame();
+      if (lives > 0) {
+        guessInput.blur();
+        continuePrompt.classList.remove('hidden');
+      } else {
+        updateStatus('Time is up. Your run ends here.', 'error');
+        endGame();
+      }
     }
   }, 1000);
+}
+
+function startTimer() {
+  timerRemaining = ROUND_TIME_LIMIT;
+  updateHud();
+  runTimerInterval();
 }
 
 function endGame() {
@@ -622,6 +632,7 @@ async function prepareGame(newStarter, mode = selectedMode) {
   inFlight = false;
   leaderboardSaved = false;
   board.classList.remove('chain-broken');
+  continuePrompt.classList.add('hidden');
   stopTimer();
 
   startScreen.classList.add('hidden');
@@ -791,7 +802,7 @@ guessInput.addEventListener('input', () => {
 
 // Tapping these buttons would otherwise steal focus from guessInput and
 // close the on-screen keyboard; keep focus on the input instead.
-[enterBtn, hintBtn, useLifeBtn].forEach((button) => {
+[enterBtn, hintBtn].forEach((button) => {
   button.addEventListener('mousedown', (event) => {
     event.preventDefault();
   });
@@ -803,26 +814,26 @@ enterBtn.addEventListener('click', () => {
   }
 });
 
-useLifeBtn.addEventListener('click', () => {
-  if (gameOver || inFlight) {
-    return;
-  }
+guessForm.addEventListener('submit', submitGuess);
+hintBtn.addEventListener('click', useHint);
 
-  if (lives <= 0) {
-    updateStatus('No lives left to spend.', 'error');
-    return;
-  }
-
+continueYesBtn.addEventListener('click', () => {
+  continuePrompt.classList.add('hidden');
   lives -= 1;
   timerRemaining += 5;
   vibrate(15);
-  triggerRewardPopup([{ type: 'time', label: '+5s' }]);
+  triggerRewardPopup([{ type: 'life', label: '-1 ♥ used' }, { type: 'time', label: '+5s' }]);
   updateHud();
-  updateStatus('Spent a life for +5 seconds.', 'success');
+  updateStatus('Back in it! Find a synonym for ' + currentWord.toUpperCase() + '.', 'success');
+  guessInput.focus();
+  runTimerInterval();
 });
 
-guessForm.addEventListener('submit', submitGuess);
-hintBtn.addEventListener('click', useHint);
+continueNoBtn.addEventListener('click', () => {
+  continuePrompt.classList.add('hidden');
+  updateStatus('Time is up. Your run ends here.', 'error');
+  endGame();
+});
 restartBtn.addEventListener('click', () => {
   gameOver = true;
   stopTimer();

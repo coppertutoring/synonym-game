@@ -95,10 +95,7 @@
           <div class="side-panel">
             <div class="resource-box">
               <span class="resource-label">Lives</span>
-              <div class="resource-row">
-                <div id="livesDisplay" class="token-row" aria-label="Lives remaining"></div>
-                <button id="useLifeBtn" class="mini-action-btn" type="button">+5s</button>
-              </div>
+              <div id="livesDisplay" class="token-row" aria-label="Lives remaining"></div>
             </div>
             <div class="resource-box">
               <span class="resource-label">Hints</span>
@@ -138,6 +135,18 @@
           </form>
 
           <div id="bonusPop" class="bonus-pop" aria-live="polite"></div>
+
+          <div id="continuePrompt" class="modal-overlay hidden">
+            <div class="modal-card">
+              <div class="badge">Time's up</div>
+              <h2>Use a life to keep going?</h2>
+              <p>Spend one life to add 5 seconds and keep your chain alive.</p>
+              <div class="modal-actions">
+                <button id="continueYesBtn" class="primary-btn" type="button">Use a life (+5s)</button>
+                <button id="continueNoBtn" class="ghost-btn alt" type="button">End run</button>
+              </div>
+            </div>
+          </div>
         </section>
 
         <section id="resultScreen" class="card hidden">
