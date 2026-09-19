@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta
+      name="description"
+      content="Synonym Chain is a word game where players keep a chain alive by finding valid synonyms, one word at a time."
+    />
+    <meta name="theme-color" content="#f3f1eb" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="format-detection" content="telephone=no" />
+    <link rel="manifest" href="manifest.json" />
+    <link rel="icon" href="icons/favicon-32.png" sizes="32x32" />
+    <link rel="apple-touch-icon" href="icons/icon-192.png" />
+    <title>Synonym Chain</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <button id="restartBtn" class="ghost-btn hidden" type="button">New run</button>
+      </header>
+
+      <main class="game-panel">
+        <section id="startScreen" class="card start-screen">
+          <h1 class="hero-logo">Synonym Chain</h1>
+          <p class="tagline">Keep the chain connected by finding synonyms.</p>
+
+          <form id="starterForm" class="starter-form">
+            <label for="playerNameInput" class="sr-only">Your name</label>
+            <input
+              id="playerNameInput"
+              name="playerName"
+              type="text"
+              maxlength="18"
+              placeholder="Player name"
+              autocomplete="off"
+              autocapitalize="words"
+              autocorrect="off"
+              spellcheck="false"
+              enterkeyhint="done"
+            />
+            <div class="starter-actions">
+              <button id="startInfiniteBtn" class="mode-btn" type="button">Infinite</button>
+              <button id="dailyChallengeBtn" class="mode-btn" type="button">Daily</button>
+            </div>
+
+            <button id="categoriesToggleBtn" class="mode-btn category-toggle" type="button" aria-expanded="false" aria-controls="categoryPicker">
+              Categories
+            </button>
+
+            <div id="categoryPicker" class="category-picker hidden">
+              <button type="button" class="category-chip" data-category="food">🍕 Food</button>
+              <button type="button" class="category-chip" data-category="sport">⚽ Sport</button>
+              <button type="button" class="category-chip" data-category="games">🎲 Games</button>
+              <button type="button" class="category-chip" data-category="animals">🐾 Animals</button>
+            </div>
+          </form>
+
+          <div class="info-note">
+            The daily leaderboard tracks the top runs for all local players.
+          </div>
+
+          <div class="leaderboard-card">
+            <div class="leaderboard-header">
+              <span>Daily leaderboard</span>
+              <span id="leaderboardDate">Today</span>
+            </div>
+            <ol id="leaderboardList" class="leaderboard-list"></ol>
+          </div>
+        </section>
+
+        <section id="gameScreen" class="card hidden" aria-live="polite">
+          <div class="game-header">
+            <div class="status-pill">
+              <span class="label">Chain</span>
+              <strong id="chainLength">1</strong>
+            </div>
+            <div class="status-pill">
+              <span class="label">Score</span>
+              <strong id="scoreValue">0</strong>
+            </div>
+            <div class="status-pill">
+              <span class="label">Timer</span>
+              <strong id="timerValue">30s</strong>
+            </div>
+          </div>
+
+          <div class="side-panel">
+            <div class="resource-box">
+              <span class="resource-label">Lives</span>
+              <div class="resource-row">
+                <div id="livesDisplay" class="token-row" aria-label="Lives remaining"></div>
+                <button id="useLifeBtn" class="mini-action-btn" type="button">+5s</button>
+              </div>
+            </div>
+            <div class="resource-box">
+              <span class="resource-label">Hints</span>
+              <div id="hintsDisplay" class="token-row" aria-label="Hint tokens"></div>
+            </div>
+          </div>
+
+          <div class="board-wrap">
+            <div class="board-header">
+              <span>Word chain</span>
+              <span id="attemptCounter">0 words</span>
+            </div>
+            <div id="board" class="board" aria-label="Synonym chain path"></div>
+          </div>
+
+          <div class="target-bar">
+            <span class="prompt">Find a synonym for</span>
+            <h2 id="targetWord">happy</h2>
+          </div>
+
+          <div id="statusMessage" class="status-message" aria-live="polite">Ready for your first move.</div>
+
+          <form id="guessForm" class="guess-row">
+            <label for="guessInput" class="sr-only">Your next synonym</label>
+            <input
+              id="guessInput"
+              type="text"
+              maxlength="20"
+              autocomplete="off"
+              autocapitalize="none"
+              spellcheck="true"
+              enterkeyhint="go"
+              placeholder="Type a synonym..."
+            />
+            <button id="hintBtn" class="hint-btn" type="button" aria-label="Use a hint">💡</button>
+            <button id="enterBtn" class="enter-btn" type="button" aria-label="Submit guess">⏎</button>
+          </form>
+
+          <div id="bonusPop" class="bonus-pop" aria-live="polite"></div>
+        </section>
+
+        <section id="resultScreen" class="card hidden">
+          <div class="badge danger">Run complete</div>
+          <h2 id="resultHeading">The chain is broken</h2>
+
+          <div class="result-grid">
+            <div>
+              <span>Final score</span>
+              <strong id="finalScore">0</strong>
+            </div>
+            <div>
+              <span>Longest chain</span>
+              <strong id="finalChain">1</strong>
+            </div>
+          </div>
+
+          <p id="resultMessage">You built a solid chain. Try another starter word to go further.</p>
+          <button id="playAgainBtn" class="primary-btn" type="button">Play again</button>
+        </section>
+      </main>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
